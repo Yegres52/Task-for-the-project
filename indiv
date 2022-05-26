@@ -1,0 +1,247 @@
+#Bank.h файл
+#pragma once
+#include <iostream>
+#include <string>
+#include <fstream>
+
+using namespace std;
+
+struct MinAccS {
+	int money;
+};
+
+class Bank {
+private:
+	string name;
+	string Bday;
+	string accType;
+	MinAccS MinAcc[3];
+	//static int MinAcc[3];
+
+	void set_name(string nameP);
+	void set_Bday(string Bday);
+	void set_MinAcc(const MinAccS* SumM);
+	void swap(Bank& obj);
+
+public:
+	//конструкторы
+	Bank();
+	Bank(string _name, string _Bday, string _accType, MinAccS _MinAcc[]);
+	Bank(const Bank& obj);
+
+	//деструктор
+	~Bank();
+
+	//чтение/запись
+	std::tuple<string, string, string> get();
+	void set(string _name, string _Bday, string _accType);
+
+
+	//методы
+	int Sum_Money() const;
+	bool Chek_Sum();
+
+	//операторы
+	Bank& operator=(Bank obj);
+	bool operator==(const Bank& obj);
+
+	//
+	friend std::istream& operator >> (std::istream& in, Bank& obj);
+	friend std::ostream& operator << (std::ostream& out, const Bank& obj);
+};
+
+
+#Bank.cpp файл
+
+#include "Bank.h"
+#include <tuple>
+#include <iostream>
+
+void Bank::set_name(string nameP) {
+	this->name = nameP;
+}
+
+void Bank::set_MinAcc(const MinAccS* SumM) {
+	this->MinAcc[0].money = SumM[0].money;
+	this->MinAcc[1].money = SumM[1].money;
+	this->MinAcc[2].money = SumM[2].money;
+}
+
+void Bank::swap(Bank& obj) {
+	std::swap(this->name,obj.name);
+	std::swap(this->Bday, obj.Bday);
+	std::swap(this->accType, obj.accType);
+	std::swap(this->MinAcc, obj.MinAcc);
+}
+
+Bank::Bank() {
+	this->name = "Person1";
+	this->Bday = "01.01.03";
+	static int MA{ 0 };
+	this->MinAcc[0].money = MA;
+	this->MinAcc[1].money = MA;
+	this->MinAcc[2].money = MA;
+}
+
+Bank::Bank(string _name, string _Bday, string _accType, MinAccS _MinAcc[]) {
+
+	set_name(_name);
+	this->Bday = _Bday;
+	this->accType = _accType;
+	set_MinAcc(_MinAcc);
+}
+
+
+Bank::Bank(const Bank& obj) {
+	this->name = obj.name;
+	this->Bday = obj.Bday;
+	this->accType = obj.accType;
+	this->set_MinAcc(obj.MinAcc);
+}
+
+std::tuple<string, string, string> Bank::get(){
+	return std::make_tuple(this->name, this->Bday, this->accType);
+}
+
+
+void Bank::set(string _name, string _Bday, string _accType) {
+	this->name = _name;
+	this->Bday = _Bday;
+	this->accType = _accType;
+}
+
+Bank::~Bank() {
+
+}
+
+
+int Bank::Sum_Money() const {
+	int sum{ 0 };
+	for (int i = 0; i < 3; i++) {
+		sum += this->MinAcc[i].money;
+	}
+	return sum;
+}
+
+bool Bank::Chek_Sum() {
+	int i{ 0 };
+	while (i<3 && this->MinAcc[i].money>=0){ i++; }
+	return i == 3;
+}
+
+Bank& Bank::operator=(Bank obj) {
+	this->swap(obj);
+	return *this;
+}
+
+bool Bank::operator==(const Bank& obj) {
+	bool TF{ this->name == obj.name };
+	TF = this->Bday == obj.Bday;
+	TF = this->accType == obj.accType;
+
+	int i{ 0 };
+	while (i < 3 && TF) {
+		TF = this->MinAcc[i].money == obj.MinAcc[i].money;
+	}
+
+	return TF;
+}
+
+
+std::istream& operator >> (std::istream& in, Bank& obj) {
+	in >> obj.name;
+	in >> obj.Bday;
+	in >> obj.accType;
+	in >> obj.MinAcc[0].money >> obj.MinAcc[1].money >> obj.MinAcc[2].money;
+	return in;
+}
+
+std::ostream& operator << (std::ostream& out, const Bank& obj) {
+	out << "Имя:" << obj.name << endl;
+	out << "Дата Рождения: " << obj.Bday << endl;
+	out << "тип счёта: " << obj.accType << endl;
+	out << "суммы деняг на счетах (текущем, депозитном, зарплатном)\n" << obj.MinAcc[0].money << ' ' << obj.MinAcc[1].money << ' ' << obj.MinAcc[2].money;
+	return out;
+}
+
+#Header.h файл
+#pragma once
+
+string ReadFile(const string& Fname);
+void set_Bank(Bank arr[], string Fname);
+int compareMyType(const void* a, const void* b);
+
+#Source.cpp файл
+#include <string>
+#include <fstream>
+#include <sstream>
+#include "Bank.h"
+#include "Header.h"
+
+using namespace std;
+
+string ReadFile(const string& Fname) {
+	ifstream f(Fname);
+	stringstream s;
+	s << f.rdbuf();
+	return s.str();
+}
+
+void set_Bank(Bank arr[], string Fname) {
+	string str, Ss;
+	str = ReadFile(Fname);
+	int i{ 0 }, ii{ 0 }, pos{ 0 };
+	while (i != -1) {
+		pos = str.find('*', pos) + 1;
+		Ss = str.substr(pos + 1, str.find("*", pos) - pos - 2);
+
+		stringstream stream(Ss);
+		stream >> arr[ii++];
+		i = str.find("*", pos);
+	}
+}
+
+int compareMyType(const void* a, const void* b)
+{
+	Bank* aa = (Bank*)a;
+	Bank* bb = (Bank*)b;
+
+	if (aa->Sum_Money() < bb->Sum_Money()) return -1;
+	if (aa->Sum_Money() == bb->Sum_Money()) return 0;
+	if (aa->Sum_Money() > bb->Sum_Money()) return 1;
+}
+
+#main.cpp файл
+
+#include <iostream>
+#include "Bank.h"
+#include <fstream>
+#include <sstream>
+#include "Header.h"
+#include <stdlib.h>
+
+using namespace std;
+
+int main () {
+	setlocale(LC_ALL, "rus");
+
+	Bank* Banks = new Bank[4];
+	int num{ 4 };
+	set_Bank(Banks, "Текст.txt");
+
+	for (int i = 0; i < num; ++i) {
+		cout << Banks[i].Sum_Money() << " ";
+	}
+	cout << endl;
+
+	qsort(Banks, num, sizeof(Bank), compareMyType);
+
+	cout << "Список : ";
+	for (int i = 0; i < num; ++i) {
+		cout << Banks[i] << endl;
+	}
+
+	return 0;
+}
+
+
